@@ -1,6 +1,6 @@
 import slug from "slug";
-import { CreateEventTypeDto } from "../dto/event-type-dto";
-import { create, findActiveByHostIdAndEventSlug, findByHostId, findBySlugAndHost, getById , remove, slugExistForHost } from "../repositories/event-type.repositories";
+import { CreateEventTypeDto, UpdateEventTypeDto } from "../dto/event-type-dto";
+import { create, findActiveByHostIdAndEventSlug, findByHostId, getById , remove, slugExistForHost, update } from "../repositories/event-type.repositories";
 import { conflictError, forbiddenError, notFound } from "../utils/api-error";
 import { getById as getUserById } from "../repositories/user.repositories";
 
@@ -38,6 +38,27 @@ export async function removeEvenType(hostId:number,id:number){
     return remove(id)
 
     
+}
+
+export async function updateEventType(hostId:number,id:number,data:UpdateEventTypeDto){
+    const eventType = await getById(id)
+
+    if(!eventType){
+        throw notFound("event not found")
+    }
+
+    if(eventType.hostId !== hostId){
+        throw forbiddenError("you dont have permission to update this event")
+    }
+
+    if(data.slug && data.slug !== eventType.slug){
+        const existing = await slugExistForHost(data.slug,hostId)
+        if(existing){
+            throw conflictError("slug already exists ")
+        }
+    }
+
+    return update(id,data)
 }
 
 export async function getEventTypeById(hostId:number,id:number){
